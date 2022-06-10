@@ -36,6 +36,9 @@ class dbclient:
         return 0
 
     def get(self, endpoint, json_params={}, printJson=False, version='2.0'):
+        """
+        http get requests can hit rate limit requests easily, 429 errors, so this retries with a sleep
+        """
         if version:
             ver = version
         if json_params:
@@ -118,11 +121,18 @@ class dbclient:
         if json_params:
             raw_results = requests.delete(self._url + '/api/{0}'.format(ver) + endpoint, headers=self._token,
                                        params=json_params)
-            results = raw_results.json()
+            if raw_results.status_code != 200:
+                results = {'http_status_code': raw_results.status_code}
+            else:
+                results = raw_results.json()
+                results['http_status_code'] = raw_results.status_code
         else:
             raw_results = requests.delete(self._url + '/api/{0}'.format(ver) + endpoint, headers=self._token)
-            results = raw_results.json()
+            if raw_results.status_code != 200:
+                results = {'http_status_code': raw_results.status_code}
+            else:
+                results = raw_results.json()
+                results['http_status_code'] = raw_results.status_code
         if printJson:
             print(json.dumps(results, indent=4, sort_keys=True))
-        results['http_status_code'] = raw_results.status_code
         return results
